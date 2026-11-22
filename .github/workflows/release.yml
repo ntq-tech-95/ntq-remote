@@ -101,9 +101,8 @@ jobs:
           make_latest: true
 
       - name: Day version.json & web len Cloudflare Pages (phongtin-key)
-        if: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy QuanLyBanQuyen/WebCapKey_Upload --project-name=phongtin-key --branch=main
+          command: pages deploy QuanLyBanQuyen/WebCapKey_Upload --project-name=phongtin-key --commit-dirty=true
