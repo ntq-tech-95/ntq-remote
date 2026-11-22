@@ -367,7 +367,9 @@ def run_publish_pipeline(
     else:
         print(f"[2/6] Dùng lại tệp có sẵn: {raw_exe}")
 
-    upload_exe = root / "BoCaiDat" / "NTQ-Remote.exe"
+    stage_dir = root / "build_tmp"
+    stage_dir.mkdir(parents=True, exist_ok=True)
+    upload_exe = stage_dir / "NTQ-Remote.exe"
     shutil.copy2(raw_exe, upload_exe)
 
     manifest_path = root / "QuanLyBanQuyen" / "WebCapKey_Upload" / "version.json"
