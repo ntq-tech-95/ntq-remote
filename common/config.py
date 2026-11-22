@@ -1,7 +1,7 @@
 """Cấu hình mặc định và hằng số dùng chung cho Phòng Tin Học VN."""
 
 APP_NAME = "NTQ Remote — Phòng Tin Học VN"
-APP_VERSION = "2.0.0"
+APP_VERSION = "2.0.1"
 APP_AUTHOR = "NTQ - TECH"
 DEFAULT_UPDATE_MANIFEST_URL = "https://phongtin-key.pages.dev/version.json"
 

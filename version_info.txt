@@ -1,7 +1,7 @@
 VSVersionInfo(
   ffi=FixedFileInfo(
-    filevers=(2, 0, 0, 0),
-    prodvers=(2, 0, 0, 0),
+    filevers=(2, 0, 1, 0),
+    prodvers=(2, 0, 1, 0),
     mask=0x3f,
     flags=0x0,
     OS=0x40004,
@@ -16,12 +16,12 @@ VSVersionInfo(
         [
           StringStruct('CompanyName', 'NTQ - TECH'),
           StringStruct('FileDescription', 'NTQ Remote - Phần mềm Quản lý Phòng Tin Học 100% Tiếng Việt'),
-          StringStruct('FileVersion', '2.0.0.0'),
+          StringStruct('FileVersion', '2.0.1.0'),
           StringStruct('InternalName', 'NTQ Remote'),
           StringStruct('LegalCopyright', 'Copyright © 2026 NTQ - TECH'),
           StringStruct('OriginalFilename', 'NTQ Remote.exe'),
           StringStruct('ProductName', 'NTQ Remote'),
-          StringStruct('ProductVersion', '2.0.0.0')
+          StringStruct('ProductVersion', '2.0.1.0')
         ]
       )
     ]),
