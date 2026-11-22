@@ -41,7 +41,8 @@ if not exist "%DEFAULT_DIR%" set "DEFAULT_DIR=%~dp0"
 set /p SHARE_DIR="Nhap duong dan thu muc muon share [Enter = %DEFAULT_DIR%]: "
 if "%SHARE_DIR%"=="" set "SHARE_DIR=%DEFAULT_DIR%"
 set "SHARE_DIR=%SHARE_DIR:"=%"
-if "%SHARE_DIR:~-1%"=="\" set "SHARE_DIR=%SHARE_DIR:~0,-1%"
+if "%SHARE_DIR:~-1%"==":" set "SHARE_DIR=%SHARE_DIR%\"
+if "%SHARE_DIR:~-1%"=="\" if not "%SHARE_DIR:~3%"=="" set "SHARE_DIR=%SHARE_DIR:~0,-1%"
 
 if not exist "%SHARE_DIR%" (
     echo [LOI] Khong tim thay thu muc: "%SHARE_DIR%"
@@ -49,7 +50,9 @@ if not exist "%SHARE_DIR%" (
     goto :menu
 )
 
+set "DEFAULT_NAME="
 for %%F in ("%SHARE_DIR%") do set "DEFAULT_NAME=%%~nxF"
+if "%DEFAULT_NAME%"=="" set "DEFAULT_NAME=BoCaiDat_NTQ"
 set /p SHARE_NAME="Ten thu muc hien trong Network [Enter = %DEFAULT_NAME%]: "
 if "%SHARE_NAME%"=="" set "SHARE_NAME=%DEFAULT_NAME%"
 
