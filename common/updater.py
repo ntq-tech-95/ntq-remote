@@ -113,6 +113,16 @@ def _validate_http_url(url: str) -> str:
     return clean
 
 
+def make_ssl_context() -> ssl.SSLContext:
+    """Tạo SSLContext ưu tiên bộ chứng chỉ certifi (tránh lỗi CA cũ trên Windows)."""
+    try:
+        import certifi
+
+        return ssl.create_default_context(cafile=certifi.where())
+    except Exception:
+        return ssl.create_default_context()
+
+
 def fetch_update_manifest(
     manifest_url: str, timeout: float = 8.0
 ) -> dict[str, Any]:
@@ -122,7 +132,7 @@ def fetch_update_manifest(
         url,
         headers={"User-Agent": f"NTQ-Remote/{APP_VERSION}", "Accept": "application/json"},
     )
-    ctx = ssl.create_default_context() if url.lower().startswith("https://") else None
+    ctx = make_ssl_context() if url.lower().startswith("https://") else None
     with urllib.request.urlopen(req, timeout=timeout, context=ctx) as resp:
         raw = resp.read(256 * 1024).decode("utf-8")
     data = json.loads(raw)
@@ -148,7 +158,7 @@ def download_update_exe(
         url,
         headers={"User-Agent": f"NTQ-Remote/{APP_VERSION}"},
     )
-    ctx = ssl.create_default_context() if url.lower().startswith("https://") else None
+    ctx = make_ssl_context() if url.lower().startswith("https://") else None
     try:
         with urllib.request.urlopen(req, timeout=timeout, context=ctx) as resp:
             total_hdr = resp.headers.get("Content-Length")

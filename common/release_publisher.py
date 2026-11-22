@@ -14,7 +14,7 @@ from typing import Any
 
 from common.config import APP_VERSION
 from common.network import get_app_data_dir
-from common.updater import sync_app_version_files, write_release_manifest
+from common.updater import make_ssl_context, sync_app_version_files, write_release_manifest
 
 DEFAULT_GITHUB_REPO = "ntq-tech-95/ntq-remote"
 DEFAULT_CF_PROJECT = "phongtin-key"
@@ -94,7 +94,7 @@ def _gh_request(
         headers["Content-Type"] = content_type
 
     req = urllib.request.Request(url, data=data, headers=headers, method=method)
-    ctx = ssl.create_default_context()
+    ctx = make_ssl_context()
     try:
         with urllib.request.urlopen(req, timeout=timeout, context=ctx) as resp:
             body = resp.read().decode("utf-8", errors="replace")
@@ -211,7 +211,7 @@ def verify_cloudflare_token(account_id: str, api_token: str) -> tuple[bool, str]
         },
         method="GET",
     )
-    ctx = ssl.create_default_context()
+    ctx = make_ssl_context()
     try:
         with urllib.request.urlopen(req, timeout=12.0, context=ctx) as resp:
             data = json.loads(resp.read().decode("utf-8", errors="replace"))
