@@ -1,9 +1,6 @@
 name: Tu dong dong goi & Phat hanh NTQ Remote
 
 on:
-  push:
-    tags:
-      - "v*"
   workflow_dispatch:
     inputs:
       version:
