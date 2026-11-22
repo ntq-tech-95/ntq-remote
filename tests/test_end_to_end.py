@@ -63,9 +63,11 @@ from common.updater import (
     write_release_manifest,
 )
 from common.release_publisher import (
+    clean_token_input,
     create_or_update_github_release,
     load_publisher_config,
     save_publisher_config,
+    verify_cloudflare_token,
 )
 
 
@@ -950,6 +952,11 @@ class TestPhongTinHocVN(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
+            self.assertEqual(clean_token_input('  "Bearer abc_123_XYZ" '), "abc_123_XYZ")
+            self.assertEqual(clean_token_input("CLOUDFLARE_API_TOKEN=tok999"), "tok999")
+            ok_short, _ = verify_cloudflare_token("0" * 32, "too_short")
+            self.assertFalse(ok_short)
+
             save_publisher_config(
                 {
                     "github_repo": "ntq-tech-95/ntq-remote",

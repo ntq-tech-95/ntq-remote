@@ -183,6 +183,52 @@ def create_or_update_github_release(
     }
 
 
+def clean_token_input(raw: str) -> str:
+    """Làm sạch token nếu vô tình dán thừa dấu ngoặc, khoảng trắng hoặc 'Bearer '."""
+    val = str(raw or "").strip().strip('"').strip("'").strip()
+    if "=" in val and val.split("=", 1)[0].strip().isupper():
+        val = val.split("=", 1)[1].strip()
+    if val.lower().startswith("bearer "):
+        val = val[7:].strip()
+    return val
+
+
+def verify_cloudflare_token(account_id: str, api_token: str) -> tuple[bool, str]:
+    """Kiểm tra nhanh định dạng và quyền của CLOUDFLARE_API_TOKEN qua Cloudflare API."""
+    tok = clean_token_input(api_token)
+    if len(tok) < 25 or not tok.isascii() or any(c.isspace() for c in tok):
+        return (
+            False,
+            f"Token Cloudflare hiện tại không đúng định dạng (chỉ dài {len(tok)} ký tự; "
+            "Token thật của Cloudflare thường dài khoảng 40 ký tự).",
+        )
+    req = urllib.request.Request(
+        f"https://api.cloudflare.com/client/v4/accounts/{account_id}/pages/projects",
+        headers={
+            "Authorization": f"Bearer {tok}",
+            "Content-Type": "application/json",
+            "User-Agent": f"NTQ-Remote-Publisher/{APP_VERSION}",
+        },
+        method="GET",
+    )
+    ctx = ssl.create_default_context()
+    try:
+        with urllib.request.urlopen(req, timeout=12.0, context=ctx) as resp:
+            data = json.loads(resp.read().decode("utf-8", errors="replace"))
+            if data.get("success"):
+                return True, "Hợp lệ"
+            return False, f"Cloudflare từ chối token: {data.get('errors')}"
+    except urllib.error.HTTPError as err:
+        try:
+            err_body = err.read().decode("utf-8", errors="replace")
+            code = err.code
+        finally:
+            err.close()
+        return False, f"Cloudflare báo lỗi ({code}): {err_body[:180]}"
+    except Exception as exc:
+        return True, f"Không kiểm tra trước được do lỗi mạng ({exc}), tiếp tục thử đẩy..."
+
+
 def deploy_cloudflare_pages(
     upload_dir: Path,
     project_name: str,
@@ -194,8 +240,8 @@ def deploy_cloudflare_pages(
     if not npx:
         raise FileNotFoundError("Không tìm thấy Node.js / npx để chạy Wrangler.")
     env = os.environ.copy()
-    env["CLOUDFLARE_ACCOUNT_ID"] = account_id
-    env["CLOUDFLARE_API_TOKEN"] = api_token
+    env["CLOUDFLARE_ACCOUNT_ID"] = account_id.strip()
+    env["CLOUDFLARE_API_TOKEN"] = clean_token_input(api_token)
     cmd = [
         npx,
         "--yes",
@@ -219,15 +265,30 @@ def _prompt_if_missing(cfg: dict[str, str], interactive: bool) -> dict[str, str]
     if not cfg["github_token"]:
         print("\n--- Thiet lap lan dau: GitHub Token ---")
         print("Tao tai: https://github.com/settings/tokens/new (tich quyen 'repo')")
-        cfg["github_token"] = input("Dan GitHub Personal Access Token (ghp_...): ").strip()
+        cfg["github_token"] = clean_token_input(
+            input("Dan GitHub Personal Access Token (ghp_...): ")
+        )
         changed = True
     if not cfg["cf_account_id"]:
         print("\n--- Thiet lap lan dau: Cloudflare Account ID ---")
-        cfg["cf_account_id"] = input("Dan CLOUDFLARE_ACCOUNT_ID (32 ky tu): ").strip()
+        cfg["cf_account_id"] = clean_token_input(input("Dan CLOUDFLARE_ACCOUNT_ID (32 ky tu): "))
         changed = True
-    if not cfg["cf_api_token"]:
-        print("\n--- Thiet lap lan dau: Cloudflare API Token ---")
-        cfg["cf_api_token"] = input("Dan CLOUDFLARE_API_TOKEN: ").strip()
+
+    while True:
+        if not cfg["cf_api_token"]:
+            print("\n--- Thiet lap Cloudflare API Token (chuoi dai ~40 ky tu) ---")
+            print("Luu y: Dan dung chuoi Token khi bam 'Create Token', KHONG dan ten Token.")
+            cfg["cf_api_token"] = clean_token_input(input("Dan CLOUDFLARE_API_TOKEN: "))
+            changed = True
+        ok_cf, cf_msg = verify_cloudflare_token(cfg["cf_account_id"], cfg["cf_api_token"])
+        if ok_cf:
+            break
+        print(f"\n[CANH BAO] {cf_msg}")
+        cfg["cf_api_token"] = clean_token_input(
+            input("Dan lai CLOUDFLARE_API_TOKEN moi (hoac Enter de huy): ")
+        )
+        if not cfg["cf_api_token"]:
+            raise RuntimeError(cf_msg)
         changed = True
 
     if changed:
@@ -331,6 +392,20 @@ def run_publish_pipeline(
     print(f"Manifest OTA: https://{cfg['cf_pages_project']}.pages.dev/version.json")
 
 
+def deploy_cloudflare_only(project_root: Path | None = None, interactive: bool = True) -> None:
+    """Chỉ chạy lại bước đẩy WebCapKey_Upload (version.json) lên Cloudflare Pages."""
+    root = project_root or Path(__file__).resolve().parent.parent
+    cfg = _prompt_if_missing(load_publisher_config(), interactive=interactive)
+    print(f"Đang cập nhật https://{cfg['cf_pages_project']}.pages.dev/version.json...")
+    deploy_cloudflare_pages(
+        upload_dir=root / "QuanLyBanQuyen" / "WebCapKey_Upload",
+        project_name=cfg["cf_pages_project"],
+        account_id=cfg["cf_account_id"],
+        api_token=cfg["cf_api_token"],
+    )
+    print(f"\n=== ĐẨY CLOUDFLARE THÀNH CÔNG: https://{cfg['cf_pages_project']}.pages.dev/version.json ===")
+
+
 if __name__ == "__main__":
     import argparse
 
@@ -339,6 +414,7 @@ if __name__ == "__main__":
     parser.add_argument("--notes", default="", help="Ghi chú thay đổi")
     parser.add_argument("--skip-tests", action="store_true", help="Bỏ qua bước unittest")
     parser.add_argument("--reuse-exe", action="store_true", help="Dùng lại EXE vừa build")
+    parser.add_argument("--cf-only", action="store_true", help="Chỉ đẩy lại version.json lên Cloudflare")
     parser.add_argument("--reset-tokens", action="store_true", help="Nhập lại Token GitHub/Cloudflare")
     ns = parser.parse_args()
 
@@ -346,6 +422,10 @@ if __name__ == "__main__":
         p = get_publisher_config_path()
         p.unlink(missing_ok=True)
         print(f"Đã xóa cấu hình token cũ tại {p}")
+
+    if ns.cf_only:
+        deploy_cloudflare_only(interactive=True)
+        sys.exit(0)
 
     ver = ns.version.strip()
     if not ver:
