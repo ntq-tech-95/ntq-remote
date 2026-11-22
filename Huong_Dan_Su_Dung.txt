@@ -1,0 +1,63 @@
+HƯỚNG DẪN SỬ DỤNG PHẦN MỀM PHÒNG TIN HỌC VN (100% TIẾNG VIỆT)
+================================================================
+
+1. DÙNG THỬ NGAY TRÊN MÁY HIỆN TẠI (KHÔNG CẦN CODE):
+   - Nhấp đúp file: Chay_Giao_Vien.bat  (để mở giao diện Giáo viên)
+   - Nhấp đúp file: Chay_Hoc_Sinh.bat   (để mở giao diện Học sinh thử nghiệm)
+   - Trên cửa sổ Học sinh, phần mềm tự tìm máy Giáo viên trong mạng LAN,
+     hoặc bạn có thể nhập 127.0.0.1 rồi bấm "Kết nối" để thử ngay trên 1 máy.
+
+2. MANG ĐI MỌI PHÒNG TIN HỌC CHỈ VỚI DUY NHẤT 1 FILE:
+   - Chép duy nhất tệp "BoCaiDat\NTQ Remote.exe" vào USB.
+   - Khi sang bất kỳ máy tính Windows nào trong phòng tin học, nhấp đúp tệp này:
+       + Muốn dùng ngay (không cần cài): bấm "Mở chế độ MÁY GIÁO VIÊN"
+         hoặc "Mở chế độ MÁY HỌC SINH".
+       + Muốn cài cố định vào máy: chọn Máy Học Sinh / Máy Giáo Viên, rồi bấm
+         "Cài theo tùy chọn trên" (hoặc bấm nút xanh "Cài nhanh MÁY HỌC SINH (1 chạm)")
+         -> tự tạo biểu tượng Desktop, Start Menu, bộ gỡ cài đặt và bật khởi động cùng Windows.
+       + Cài nhanh bằng dòng lệnh (cho 50 máy): "NTQ Remote.exe" --install-student --room PHONG-TIN-01
+     (Không cần cài Python trên các máy trong phòng thực hành.)
+   - Nếu muốn tự đóng gói lại sau khi chỉnh sửa mã nguồn: chạy Dong_Goi_EXE.bat.
+   - Lưu ý tường lửa Windows (Windows Firewall):
+     Lần đầu mở, Windows có thể hỏi "Allow access / Cho phép truy cập mạng",
+     hãy tích chọn cả Private & Public networks và bấm Allow (Cho phép).
+
+3. CÁC TÍNH NĂNG CHÍNH TRÊN MÁY GIÁO VIÊN:
+   - Không chọn ô nào = thao tác với TOÀN BỘ LỚP.
+   - Tích chọn một hoặc nhiều máy = chỉ thao tác với CÁC MÁY ĐÃ CHỌN.
+   - Nhấp đúp vào màn hình nhỏ của một học sinh = Phóng to & Điều khiển từ xa.
+   - Phát bài tập: Tệp gửi xuống tự động lưu vào Desktop\BaiTapNhanTuGiaoVien của học sinh.
+   - Thu bài: Học sinh chọn tệp nộp sẽ tự động lưu vào Desktop\BaiThuTuHocSinh của giáo viên.
+   - Khởi động cùng Windows: Tích chọn ô "Khởi động cùng Windows" trên giao diện
+     Giáo viên hoặc Học sinh (hoặc bấm chuột phải biểu tượng HS dưới khay hệ thống)
+     để bật/tắt tự mở phần mềm khi bật máy.
+   - Chống học sinh tự thoát: Mật khẩu mặc định để thoát ứng dụng Học sinh hoặc
+     tắt khởi động cùng Windows là "123456" (có thể đổi bằng nút "Mật khẩu lớp").
+   - Bật/Tắt máy từ xa: Bấm "Bật / Tắt máy" -> "Bật máy từ xa (Wake-on-LAN)"
+     để đánh thức dàn máy đã lưu (máy trạm cần bật Wake-on-LAN trong BIOS/Card mạng).
+   - Chặn Game & Web / Trắc nghiệm / Điểm danh Excel: Có sẵn trên thanh công cụ
+     hàng 2 của Máy Giáo Viên.
+   - Chiếu bài 1 học sinh cho cả lớp xem: Chọn 1 học sinh rồi bấm "Chiếu bài HS"
+     (hoặc chuột phải thẻ học sinh -> "Chiếu màn hình em này cho cả lớp").
+   - Truyền giọng nói Micro / Bảng vẽ chú thích / Quay video bài giảng:
+     Dùng các nút "Nói qua loa", "Bảng vẽ", "Quay bài giảng" (video lưu tại Desktop\BaiGiangDaQuay).
+   - Tạo đề kiểm tra nhiều câu tự chấm: Bấm "Đề kiểm tra" -> soạn hoặc mở file .json ->
+     phát xuống lớp và xuất bảng điểm Excel (.csv).
+   - Thiết bị & Cập nhật (Online OTA + LAN):
+      + Bấm nút "Cập nhật" (hoặc menu "Thiết bị & Nguồn" -> "Kiểm tra cập nhật Online...")
+        để kiểm tra tệp version.json trên máy chủ (mặc định https://phongtin-key.pages.dev/version.json),
+        tự tải về, kiểm tra SHA-256 và tự khởi động lại sang phiên bản mới.
+      + Sau khi Giáo viên nâng cấp, bấm "Đẩy bản hiện tại sang máy HS qua LAN" (hoặc chọn file EXE)
+        để đồng bộ toàn bộ máy Học sinh trong phòng không cần Internet.
+      + (Khóa cổng USB lưu trữ yêu cầu máy Học sinh chạy với quyền Quản trị viên.)
+   - Hiện máy đang tắt trên lưới: Tích chọn "Hiện máy đang tắt" để theo dõi đủ vị trí máy
+     và chuột phải lên máy đang tắt để bấm Bật máy từ xa (Wake-on-LAN).
+
+4. BẢN QUYỀN PHẦN MỀM (TÁC GIẢ: NTQ - TECH):
+   - Khi mang "NTQ Remote.exe" sang máy Giáo viên mới, phần mềm hiển thị
+     Mã máy (Hardware ID dạng PTH-XXXX-XXXX-XXXX) và yêu cầu nhập Mã bản quyền.
+   - Trên máy tác giả, mở công cụ: QuanLyBanQuyen\Mo_Cong_Cu_Cap_Ban_Quyen.bat
+     hoặc trang web cấp bản quyền của bạn để tạo Mã bản quyền (PTH1....)
+     gắn theo Mã máy đó, kèm tên đơn vị, số máy học sinh tối đa và thời hạn sử dụng.
+   - QUAN TRỌNG: Không chia sẻ thư mục QuanLyBanQuyen (chứa private_key.pem)
+     cho người khác; chỉ gửi "NTQ Remote.exe" và Mã bản quyền riêng của từng phòng.

@@ -1,0 +1,18 @@
+# Bảo mật: tuyệt đối không đưa khóa ký bản quyền lên GitHub
+QuanLyBanQuyen/private_key.pem
+QuanLyBanQuyen/CapBanQuyen_DienThoai.html
+*.pem
+*.key
+
+# Môi trường Python & file đóng gói
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+build/
+build_tmp/
+dist/
+.pyinstaller/
+BoCaiDat/
+*.spec

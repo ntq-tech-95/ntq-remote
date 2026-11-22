@@ -1,0 +1,62 @@
+HƯỚNG DẪN THIẾT LẬP TỰ ĐỘNG PHÁT HÀNH QUA GITHUB ACTIONS (LÀM 1 LẦN DUY NHẤT)
+================================================================================
+
+Sau khi thiết lập 1 lần theo 3 bước dưới đây, mỗi khi có phiên bản mới
+bạn CHỈ CẦN nhấp đúp chạy "Phat_Hanh_Ban_Moi_GitHub.bat" rồi nhập số phiên bản
+(ví dụ 2.1.0). GitHub sẽ tự đóng gói EXE, tự tạo link tải và tự đẩy
+version.json lên https://phongtin-key.pages.dev để các máy Giáo viên tự nhận.
+
+--------------------------------------------------------------------------------
+BƯỚC 1: Tạo kho chứa (Repository) trên GitHub
+--------------------------------------------------------------------------------
+1. Đăng nhập https://github.com -> bấm "+" -> "New repository".
+2. Đặt tên kho (VD: ntq-remote), chọn **Public** (để máy Giáo viên tải
+   được file cập nhật trực tiếp từ GitHub Releases không cần mật khẩu).
+3. Bấm "Create repository" và copy đường dẫn HTTPS, ví dụ:
+   https://github.com/ten-cua-ban/ntq-remote.git
+
+--------------------------------------------------------------------------------
+BƯỚC 2: Gắn kết quả Cloudflare Pages vào GitHub Secrets (để tự đẩy version.json)
+--------------------------------------------------------------------------------
+1. Lấy Account ID & API Token Cloudflare:
+   - Đăng nhập Cloudflare Dashboard -> copy "Account ID" ở cột phải trang Overview
+     (hoặc trang Workers & Pages).
+   - Vào "My Profile" -> "API Tokens" -> "Create Token" -> chọn mẫu
+     "Edit Cloudflare Workers" hoặc tạo Custom Token với quyền:
+     Account -> Cloudflare Pages -> Edit -> bấm "Continue to summary" -> "Create Token".
+2. Mở kho GitHub vừa tạo ở Bước 1:
+   - Vào "Settings" -> "Secrets and variables" -> "Actions" -> "New repository secret".
+   - Thêm 2 Secret sau:
+       * CLOUDFLARE_API_TOKEN   = <Token vừa tạo>
+       * CLOUDFLARE_ACCOUNT_ID  = <Account ID của bạn>
+   *(Lưu ý: tên Project trên Cloudflare Pages phải đúng là "phongtin-key" như hiện tại).*
+
+--------------------------------------------------------------------------------
+BƯỚC 3: Đưa mã nguồn lên GitHub lần đầu (mở PowerShell tại D:\PhongTinHocVN)
+--------------------------------------------------------------------------------
+Chạy các lệnh sau:
+
+   cd D:\PhongTinHocVN
+   git init
+   git branch -M main
+   git add -A
+   git status
+
+*** KIỂM TRA QUAN TRỌNG TRƯỚC KHI COMMIT ***
+Đảm bảo KHÔNG có dòng nào chứa "private_key.pem" trong danh sách `git status`
+(tệp .gitignore đã chặn sẵn tệp này để bảo vệ khóa bản quyền của bạn).
+
+Sau đó chạy tiếp:
+
+   git commit -m "Khoi tao ma nguon NTQ Remote v2.0.0"
+   git remote add origin https://github.com/ten-cua-ban/ntq-remote.git
+   git push -u origin main
+
+--------------------------------------------------------------------------------
+CÁCH PHÁT HÀNH CÁC PHIÊN BẢN SAU NÀY (CHỈ 1 CÚ CLICK)
+--------------------------------------------------------------------------------
+- Mỗi khi chỉnh sửa xong, nhấp đúp chạy:
+      Phat_Hanh_Ban_Moi_GitHub.bat
+- Nhập phiên bản mới (VD: 2.1.0) + ghi chú thay đổi.
+- Khoảng 3-4 phút sau, mở lại https://phongtin-key.pages.dev/version.json
+  sẽ thấy tự động cập nhật bản mới kèm link GitHub Releases & mã SHA-256!

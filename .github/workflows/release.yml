@@ -1,0 +1,109 @@
+name: Tu dong dong goi & Phat hanh NTQ Remote
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "So phien ban moi (VD: 2.1.0)"
+        required: true
+        default: "2.1.0"
+      notes:
+        description: "Ghi chu thay doi (tuy chon)"
+        required: false
+        default: "Cap nhat NTQ Remote phien ban moi."
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Tai ma nguon tu GitHub
+        uses: actions/checkout@v4
+
+      - name: Cai dat Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Cai dat thu vien phu thuoc
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Xac dinh phien ban phat hanh
+        id: ver
+        shell: pwsh
+        run: |
+          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+            $raw = "${{ github.event.inputs.version }}".Trim().TrimStart("v", "V")
+            $tag = "v$raw"
+            $notes = "${{ github.event.inputs.notes }}"
+          } else {
+            $tag = "${{ github.ref_name }}".Trim()
+            $raw = $tag.TrimStart("v", "V")
+            $notes = "Phat hanh tu dong phien ban $tag"
+          }
+          python -m common.updater --bump "$raw"
+          "raw=$raw" >> $env:GITHUB_OUTPUT
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+          "notes=$notes" >> $env:GITHUB_OUTPUT
+
+      - name: Chay kiem thu tu dong
+        run: |
+          python -m unittest discover -s tests -v
+
+      - name: Dong goi duy nhat 1 file EXE bang PyInstaller
+        shell: cmd
+        run: |
+          if not exist BoCaiDat mkdir BoCaiDat
+          pyinstaller --noconfirm --onefile --windowed ^
+            --exclude-module PySide6.QtWebEngineCore ^
+            --exclude-module PySide6.QtWebEngineWidgets ^
+            --exclude-module PySide6.QtWebEngineQuick ^
+            --exclude-module PySide6.QtPdf ^
+            --exclude-module PySide6.QtPdfWidgets ^
+            --exclude-module PySide6.Qt3DCore ^
+            --exclude-module PySide6.Qt3DRender ^
+            --exclude-module PySide6.QtQuick ^
+            --exclude-module PySide6.QtQml ^
+            --exclude-module PySide6.QtMultimedia ^
+            --icon "assets\ntq_remote.ico" ^
+            --version-file "version_info.txt" ^
+            --add-data "assets\ntq_remote.ico;assets" ^
+            --distpath "BoCaiDat" ^
+            --name "NTQ Remote" ^
+            --paths "." ^
+            "run_unified.py"
+          copy /y "BoCaiDat\NTQ Remote.exe" "BoCaiDat\NTQ-Remote.exe"
+
+      - name: Tao version.json kem ma SHA-256
+        shell: pwsh
+        run: |
+          $url = "https://github.com/${{ github.repository }}/releases/download/${{ steps.ver.outputs.tag }}/NTQ-Remote.exe"
+          python -m common.updater "BoCaiDat\NTQ-Remote.exe" "QuanLyBanQuyen\WebCapKey_Upload\version.json" --version "${{ steps.ver.outputs.raw }}" --download-url "$url" --notes "${{ steps.ver.outputs.notes }}"
+          Get-Content "QuanLyBanQuyen\WebCapKey_Upload\version.json"
+
+      - name: Dang ban phat hanh len GitHub Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.ver.outputs.tag }}
+          name: "NTQ Remote ${{ steps.ver.outputs.tag }}"
+          body: ${{ steps.ver.outputs.notes }}
+          files: |
+            BoCaiDat/NTQ-Remote.exe
+            QuanLyBanQuyen/WebCapKey_Upload/version.json
+          make_latest: true
+
+      - name: Day version.json & web len Cloudflare Pages (phongtin-key)
+        if: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy QuanLyBanQuyen/WebCapKey_Upload --project-name=phongtin-key --branch=main
