@@ -297,6 +297,23 @@ def _prompt_if_missing(cfg: dict[str, str], interactive: bool) -> dict[str, str]
     return cfg
 
 
+def _read_exe_file_version(exe_path: Path) -> str:
+    if sys.platform != "win32" or not exe_path.is_file():
+        return ""
+    res = subprocess.run(
+        [
+            "powershell",
+            "-NoProfile",
+            "-Command",
+            f"(Get-Item '{str(exe_path).replace(chr(39), chr(39)*2)}').VersionInfo.FileVersion",
+        ],
+        capture_output=True,
+        text=True,
+        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+    )
+    return res.stdout.strip()
+
+
 def run_publish_pipeline(
     version: str,
     notes: str = "",
@@ -312,7 +329,7 @@ def run_publish_pipeline(
         if not cfg.get(req_key):
             raise ValueError(f"Thiếu thông tin cấu hình '{req_key}'.")
 
-    ver_3, _ = sync_app_version_files(version, root)
+    ver_3, ver_4 = sync_app_version_files(version, root)
     tag = f"v{ver_3}"
     release_notes = notes.strip() or f"Phát hành NTQ Remote {tag}"
 
@@ -328,7 +345,16 @@ def run_publish_pipeline(
         )
 
     raw_exe = root / "BoCaiDat" / "NTQ Remote.exe"
-    if not (reuse_exe and raw_exe.is_file()):
+    can_reuse = reuse_exe and raw_exe.is_file()
+    if can_reuse:
+        built_ver = _read_exe_file_version(raw_exe)
+        if built_ver and not built_ver.startswith(ver_3):
+            print(
+                f"[!] Tệp có sẵn đang là v{built_ver}, khác với v{ver_4} — tự động đóng gói lại để tránh báo cập nhật lặp!"
+            )
+            can_reuse = False
+
+    if not can_reuse:
         print(f"[2/6] Đang đóng gói NTQ Remote.exe v{ver_3}...")
         env = os.environ.copy()
         env["NO_PAUSE"] = "1"

@@ -1,8 +1,8 @@
 {
   "app_name": "NTQ Remote",
   "version": "2.0.1",
-  "sha256": "2bf2b2a1516547189c1ca4730d5b84b25fee486db9fbfcbc5c0dfabb91815b4e",
-  "file_size": 64188031,
+  "sha256": "46b34194950301dcbba4eec40ead367f5f368a631194c2cd71b7d57abf21214a",
+  "file_size": 64188411,
   "download_url": "https://github.com/ntq-tech-95/ntq-remote/releases/download/v2.0.1/NTQ-Remote.exe",
   "notes": "Phát hành NTQ Remote v2.0.1",
   "released_at": "2026-11-22"
