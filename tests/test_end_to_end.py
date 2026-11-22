@@ -62,6 +62,11 @@ from common.updater import (
     parse_version,
     write_release_manifest,
 )
+from common.release_publisher import (
+    create_or_update_github_release,
+    load_publisher_config,
+    save_publisher_config,
+)
 
 
 def _pump_events(app: QApplication, predicate, timeout_sec: float = 5.0) -> bool:
@@ -933,6 +938,117 @@ class TestPhongTinHocVN(unittest.TestCase):
                 self.assertTrue(dlg.btn_download.isEnabled())
                 self.assertIn("2.1.0", dlg.lbl_result.text())
                 dlg.close()
+            finally:
+                httpd.shutdown()
+                httpd.server_close()
+
+    def test_release_publisher_config_and_github_release_mock(self) -> None:
+        import http.server
+        import json
+        import socketserver
+        import threading
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            save_publisher_config(
+                {
+                    "github_repo": "ntq-tech-95/ntq-remote",
+                    "github_token": "ghp_test_token_123",
+                    "cf_account_id": "acc_123",
+                    "cf_api_token": "cf_tok_123",
+                    "cf_pages_project": "phongtin-key",
+                },
+                base_dir=root,
+            )
+            cfg = load_publisher_config(base_dir=root)
+            self.assertEqual(cfg["github_repo"], "ntq-tech-95/ntq-remote")
+            self.assertEqual(cfg["cf_pages_project"], "phongtin-key")
+
+            state = {"release_created": False, "uploaded": {}, "deleted": []}
+
+            class MockGitHubHandler(http.server.BaseHTTPRequestHandler):
+                def log_message(self, format, *args):
+                    pass
+
+                def _send_json(self, code: int, obj: dict) -> None:
+                    raw = json.dumps(obj).encode("utf-8")
+                    self.send_response(code)
+                    self.send_header("Content-Type", "application/json")
+                    self.send_header("Content-Length", str(len(raw)))
+                    self.end_headers()
+                    self.wfile.write(raw)
+
+                def do_GET(self):
+                    if not state["release_created"]:
+                        self._send_json(404, {"message": "Not Found"})
+                    else:
+                        self._send_json(
+                            200,
+                            {
+                                "id": 77,
+                                "html_url": "https://github.com/ntq-tech-95/ntq-remote/releases/tag/v2.0.0",
+                                "assets": [{"id": 99, "name": "NTQ-Remote.exe"}],
+                            },
+                        )
+
+                def do_POST(self):
+                    length = int(self.headers.get("Content-Length") or 0)
+                    body = self.rfile.read(length)
+                    if self.path.endswith("/releases"):
+                        state["release_created"] = True
+                        self._send_json(
+                            201,
+                            {
+                                "id": 77,
+                                "html_url": "https://github.com/ntq-tech-95/ntq-remote/releases/tag/v2.0.0",
+                                "assets": [],
+                            },
+                        )
+                    elif "/assets?name=" in self.path:
+                        name = self.path.split("name=")[-1]
+                        state["uploaded"][name] = body
+                        self._send_json(
+                            201,
+                            {"browser_download_url": f"https://example.test/{name}"},
+                        )
+
+                def do_DELETE(self):
+                    state["deleted"].append(self.path)
+                    self.send_response(204)
+                    self.end_headers()
+
+            httpd = socketserver.TCPServer(("127.0.0.1", 0), MockGitHubHandler)
+            port = httpd.server_address[1]
+            t = threading.Thread(target=httpd.serve_forever, daemon=True)
+            t.start()
+            try:
+                fake_exe = root / "NTQ-Remote.exe"
+                fake_exe.write_bytes(b"FAKE_EXE_BYTES")
+                res1 = create_or_update_github_release(
+                    "ntq-tech-95/ntq-remote",
+                    "ghp_test",
+                    "v2.0.0",
+                    "NTQ Remote v2.0.0",
+                    "Release 1",
+                    [fake_exe],
+                    api_base=f"http://127.0.0.1:{port}",
+                    uploads_base=f"http://127.0.0.1:{port}",
+                )
+                self.assertEqual(res1["release_id"], 77)
+                self.assertEqual(state["uploaded"]["NTQ-Remote.exe"], b"FAKE_EXE_BYTES")
+
+                res2 = create_or_update_github_release(
+                    "ntq-tech-95/ntq-remote",
+                    "ghp_test",
+                    "2.0.0",
+                    "NTQ Remote v2.0.0",
+                    "Release 2",
+                    [fake_exe],
+                    api_base=f"http://127.0.0.1:{port}",
+                    uploads_base=f"http://127.0.0.1:{port}",
+                )
+                self.assertEqual(len(state["deleted"]), 1)
+                self.assertEqual(res2["assets"]["NTQ-Remote.exe"], "https://example.test/NTQ-Remote.exe")
             finally:
                 httpd.shutdown()
                 httpd.server_close()
